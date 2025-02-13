@@ -1,9 +1,14 @@
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.DropdownMenuItem
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
@@ -12,6 +17,9 @@ import androidx.compose.ui.window.rememberWindowState
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.delay
+import m78exercices.composeapp.generated.resources.Res
+import m78exercices.composeapp.generated.resources.Trivial
+import org.jetbrains.compose.resources.painterResource
 
 fun main() = application {
     Window(
@@ -19,7 +27,7 @@ fun main() = application {
         state = rememberWindowState(width = 540.dp, height = 960.dp),
         onCloseRequest = ::exitApplication,
     ) {
-        trivialApp()
+        App()
     }
 }
 
@@ -28,7 +36,7 @@ enum class EScreen {
 }
 
 @Composable
-fun trivialApp(gameViewModel: GameViewModel = viewModel()) {
+fun App(gameViewModel: GameViewModel = viewModel()) {
     var currentScreen by remember { mutableStateOf(EScreen.Menu) }
 
     when (currentScreen) {
@@ -42,14 +50,51 @@ fun trivialApp(gameViewModel: GameViewModel = viewModel()) {
 @Composable
 fun menuScreen(onStartGame: () -> Unit, onSettings: () -> Unit) {
     Column(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Button(onClick = onStartGame, modifier = Modifier.padding(8.dp)) {
+        // Image at the top of the menu
+        Image(
+            painter = painterResource(Res.drawable.Trivial), // Replace with your resource name
+            contentDescription = "Menu Image",
+            modifier = Modifier
+                .size(250.dp)
+                .clip(RoundedCornerShape(16.dp)),
+            contentScale = ContentScale.Crop
+        )
+
+        Spacer(modifier = Modifier.height(32.dp)) // Spacing between the image and buttons
+
+        // Button to start the game
+        Button(
+            onClick = onStartGame,
+            modifier = Modifier
+                .padding(8.dp)
+                .width(200.dp)
+                .height(70.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color(0xFF4CAF50), // Green
+                contentColor = Color.Black
+            )
+        ) {
             Text("Start Game")
         }
-        Button(onClick = onSettings, modifier = Modifier.padding(8.dp)) {
+
+        // Button for settings
+        Button(
+            onClick = onSettings,
+            modifier = Modifier
+                .padding(8.dp)
+                .width(200.dp)
+                .height(70.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color(0xFF4CAF50), // Green
+                contentColor = Color.Black
+            )
+        ) {
             Text("Settings")
         }
     }
@@ -59,6 +104,12 @@ fun menuScreen(onStartGame: () -> Unit, onSettings: () -> Unit) {
 fun gameScreen(onGameEnd: () -> Unit, viewModel: GameViewModel) {
     val question = viewModel.questions.getOrNull(viewModel.currentQuestionIndex)
     var isAnswerSelected by remember { mutableStateOf(false) }
+    var shuffledOptions by remember { mutableStateOf(listOf<String>()) }
+
+    LaunchedEffect(viewModel.currentQuestionIndex) {
+        shuffledOptions = question?.options?.shuffled() ?: listOf()
+        isAnswerSelected = false
+    }
 
     LaunchedEffect(viewModel.timeLeft) {
         if (viewModel.timeLeft > 0 && !viewModel.isGameOver) {
@@ -80,7 +131,9 @@ fun gameScreen(onGameEnd: () -> Unit, viewModel: GameViewModel) {
     val totalRounds = viewModel.settings.rounds
 
     Column(
-        modifier = Modifier.fillMaxSize().padding(16.dp),
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
@@ -89,8 +142,10 @@ fun gameScreen(onGameEnd: () -> Unit, viewModel: GameViewModel) {
 
         LinearProgressIndicator(
             progress = progress,
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 32.dp),
-            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 32.dp),
+            color = Color(0xFF4CAF50),
         )
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -98,7 +153,7 @@ fun gameScreen(onGameEnd: () -> Unit, viewModel: GameViewModel) {
             Text(it.text, style = MaterialTheme.typography.bodyLarge, overflow = TextOverflow.Ellipsis, maxLines = 2)
             Spacer(modifier = Modifier.height(16.dp))
 
-            it.options.forEach { option ->
+            shuffledOptions.forEach { option ->
                 Button(
                     onClick = {
                         if (!isAnswerSelected) {
@@ -106,7 +161,14 @@ fun gameScreen(onGameEnd: () -> Unit, viewModel: GameViewModel) {
                             isAnswerSelected = true
                         }
                     },
-                    modifier = Modifier.padding(8.dp),
+                    modifier = Modifier
+                        .padding(8.dp)
+                        .width(200.dp)
+                        .height(70.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF4CAF50), // Green
+                        contentColor = Color.Black
+                    ),
                     enabled = !isAnswerSelected
                 ) {
                     Text(option)
@@ -118,19 +180,13 @@ fun gameScreen(onGameEnd: () -> Unit, viewModel: GameViewModel) {
             Text("Round $currentRound of $totalRounds", style = MaterialTheme.typography.bodyLarge)
         }
     }
-
-    // Reiniciar el estado de isAnswerSelected después del cambio de pregunta
-    if (isAnswerSelected) {
-        LaunchedEffect(viewModel.currentQuestionIndex) {
-            isAnswerSelected = false
-        }
-    }
 }
 
 @Composable
 fun resultScreen(score: Int, onBackToMenu: () -> Unit, viewModel: GameViewModel) {
     Column(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
@@ -139,7 +195,11 @@ fun resultScreen(score: Int, onBackToMenu: () -> Unit, viewModel: GameViewModel)
         Button(onClick = {
             viewModel.resetGame()
             onBackToMenu()
-        }) {
+        },
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color(0xFF4CAF50), // Green
+                contentColor = Color.Black
+            )) {
             Text("Back to Menu")
         }
     }
@@ -154,7 +214,9 @@ fun settingsScreen(onBack: () -> Unit, viewModel: GameViewModel) {
     var isDifficultyDropdownExpanded by remember { mutableStateOf(false) }
 
     Column(
-        modifier = Modifier.fillMaxSize().padding(16.dp),
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
@@ -164,7 +226,15 @@ fun settingsScreen(onBack: () -> Unit, viewModel: GameViewModel) {
         // Difficulty Dropdown
         Text("Difficulty", style = MaterialTheme.typography.bodyLarge)
         Box {
-            Button(onClick = { isDifficultyDropdownExpanded = true }) {
+            Button(
+                onClick = {
+                    isDifficultyDropdownExpanded = true
+                },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF4CAF50), // Green
+                    contentColor = Color.Black
+                )
+            ) {
                 Text(difficulty)
             }
             DropdownMenu(
@@ -194,7 +264,10 @@ fun settingsScreen(onBack: () -> Unit, viewModel: GameViewModel) {
                 ) {
                     RadioButton(
                         selected = rounds == round,
-                        onClick = { rounds = round }
+                        onClick = { rounds = round },
+                        colors = RadioButtonDefaults.colors(
+                            selectedColor = Color(0xFF4CAF50)
+                        )
                     )
                     Text(text = round.toString())
                 }
@@ -209,7 +282,12 @@ fun settingsScreen(onBack: () -> Unit, viewModel: GameViewModel) {
             value = timePerRound.toFloat(),
             onValueChange = { timePerRound = it.toInt() },
             valueRange = 10f..60f,
-            steps = 50
+            steps = 50,
+            colors = SliderDefaults.colors(
+                thumbColor = Color(0xFF4CAF50),
+                activeTrackColor = Color(0xFF4CAF50),
+                inactiveTrackColor = Color(0xFF4CAF50)
+            )
         )
         Text("$timePerRound sec", style = MaterialTheme.typography.bodyLarge)
 
@@ -223,14 +301,21 @@ fun settingsScreen(onBack: () -> Unit, viewModel: GameViewModel) {
                 timePerRound = timePerRound
             )
             onBack()
-        }) {
+        },
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color(0xFF4CAF50), // Green
+                contentColor = Color.Black)) {
             Text("Save")
         }
 
         Spacer(modifier = Modifier.height(8.dp))
 
         // Back Button
-        Button(onClick = onBack) {
+        Button(
+            onClick = onBack,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color(0xFF4CAF50), // Green
+                contentColor = Color.Black)) {
             Text("Back")
         }
     }
@@ -241,18 +326,29 @@ class GameViewModel : ViewModel() {
     var currentQuestionIndex by mutableStateOf(0)
     var timeLeft by mutableStateOf(30)
     var settings by mutableStateOf(GameSettings("Easy", 15, 30))
-    val questions: List<Question> get() = when (settings.difficulty) {
+
+    private var shuffledQuestions: List<Question> = emptyList()
+
+    // Get questions based on the configured difficulty
+    private val originalQuestions: List<Question> get() = when (settings.difficulty) {
         "Easy" -> easyQuestions
         "Normal" -> normalQuestions
         "Hard" -> hardQuestions
         else -> easyQuestions
     }
 
+    // Returns the current question from the shuffled list
+    val questions: List<Question> get() = shuffledQuestions
+
     val isGameOver get() = currentQuestionIndex >= settings.rounds
 
+    init {
+        resetGame()
+    }
+
     fun answerQuestion(answer: String) {
-        val currentQuestion = questions[currentQuestionIndex]
-        if (answer == currentQuestion.correctAnswer) {
+        val currentQuestion = questions.getOrNull(currentQuestionIndex)
+        if (currentQuestion != null && answer == currentQuestion.correctAnswer) {
             score++
         }
         nextQuestion()
@@ -276,6 +372,9 @@ class GameViewModel : ViewModel() {
         score = 0
         currentQuestionIndex = 0
         timeLeft = settings.timePerRound
+        shuffledQuestions = originalQuestions.shuffled().take(settings.rounds).map { question ->
+            question.copy(options = question.options.shuffled())
+        }
     }
 }
 
@@ -328,7 +427,7 @@ val hardQuestions = listOf(
     Question("¿Quién escribió 'Don Quijote de la Mancha'?", listOf("Miguel de Cervantes", "William Shakespeare", "Lope de Vega", "Francisco de Quevedo"), "Miguel de Cervantes"),
     Question("¿Cuál es la capital de Mongolia?", listOf("Ulán Bator", "Astana", "Biskek", "Dusambé"), "Ulán Bator"),
     Question("¿Cuál es el río más largo de Europa?", listOf("Volga", "Danubio", "Dniéper", "Rin"), "Volga"),
-    Question("¿Cuál es el desierto más árido del mundo?", listOf("Desierto de Atacama", "Desierto del Sahara", "Desierto de Gobi", "Desierto de Kalahari"), "Desierto de Atacama"),
+    Question("¿Cuál es el desierto más árido del mundo?", listOf("Desierto de Atacama", "Desierto del Sahara", "Desierto de Gobi", "Desierto de Tabernas"), "Desierto de Atacama"),
     Question("¿Cuál es el lago más profundo del mundo?", listOf("Lago Baikal", "Lago Tanganica", "Lago Superior", "Lago Victoria"), "Lago Baikal"),
     Question("¿Cuál es la montaña más alta de América del Norte?", listOf("Monte McKinley", "Monte Logan", "Monte Whitney", "Monte Mitchell"), "Monte McKinley"),
     Question("¿Cuál es el océano más profundo del mundo?", listOf("Océano Pacífico", "Océano Atlántico", "Océano Índico", "Océano Ártico"), "Océano Pacífico"),

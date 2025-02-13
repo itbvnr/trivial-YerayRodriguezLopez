@@ -14,7 +14,7 @@ fun main() = application {
     ) {
         window.minimumSize = Dimension(350, 600)
         DevelopmentEntryPoint {
-            trivialApp()
+            App()
         }
     }
 }
