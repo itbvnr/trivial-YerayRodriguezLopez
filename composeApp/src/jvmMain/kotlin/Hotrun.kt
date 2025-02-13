@@ -4,7 +4,6 @@ import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 import java.awt.Dimension
-import cat.itb.m78.exercices.App
 import org.jetbrains.compose.reload.DevelopmentEntryPoint
 
 fun main() = application {
